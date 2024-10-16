@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Event</title>
+</head>
+<body>
+    <h2>Add New Event</h2>
+    <form action="/add-event" method="POST" enctype="multipart/form-data">
+        <label for="event_name">Event Name:</label>
+        <input type="text" name="event_name" id="event_name" required><br><br>
+
+        <label for="event_description">Event Description:</label>
+        <textarea name="event_description" id="event_description" required></textarea><br><br>
+
+        <label for="event_registration_link">Registration Link:</label>
+        <input type="url" name="event_registration_link" id="event_registration_link" required><br><br>
+
+        <label for="event_deadline">Event Deadline:</label>
+        <input type="date" name="event_deadline" id="event_deadline" required><br><br>
+
+        <label for="event_poster">Event Poster (Image):</label>
+        <input type="file" name="event_poster" id="event_poster" accept="image/*" required><br><br>
+
+        <button type="submit">Submit Event</button>
+    </form>
+</body>
+</html>
