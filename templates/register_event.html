@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Registration</title>
+  
+</head>
+<body>
+    <div class="container">
+        <h2>Team Registration Form</h2>
+        <form action="/register_event" method="POST" enctype="multipart/form-data">
+            <!-- Hidden input for event name -->
+            <input type="hidden" name="event_name" value="sih2024">
+
+            <!-- Team details -->
+            <div class="form-section">
+                <label for="team_name">Team Name:</label>
+                <input type="text" name="team_name" required>
+
+                <label for="lead_name">Team Lead Name:</label>
+                <input type="text" name="lead_name" required>
+
+                <label for="idea_title">Idea Title:</label>
+                <input type="text" name="idea_title" required>
+
+                <label for="idea_description">Idea Description:</label>
+                <textarea name="idea_description" required></textarea>
+
+                <label for="idea_ppt">Upload Idea PPT (PDF):</label>
+                <input type="file" name="idea_ppt" accept="application/pdf" required>
+            </div>
+
+            <!-- Team Lead Details -->
+            <div class="form-section">
+                <h3>Team Lead Details</h3>
+                <label for="lead_department">Lead Department:</label>
+                <input type="text" name="lead_department" required>
+
+                <label for="lead_registerno">Lead Registration Number:</label>
+                <input type="text" name="lead_registerno" required>
+
+                <label for="lead_mailid">Lead Email ID:</label>
+                <input type="email" name="lead_mailid" required>
+
+                <label for="lead_phoneno">Lead Phone Number:</label>
+                <input type="tel" name="lead_phoneno" required>
+            </div>
+
+            <!-- Member 1 Details -->
+            <div class="form-section">
+                <h3>Member 1 Details</h3>
+                <label for="member1_name">Member 1 Name:</label>
+                <input type="text" name="member1_name" required>
+
+                <label for="member1_department">Member 1 Department:</label>
+                <input type="text" name="member1_department" required>
+
+                <label for="member1_registerno">Member 1 Registration Number:</label>
+                <input type="text" name="member1_registerno" required>
+
+                <label for="member1_mailid">Member 1 Email ID:</label>
+                <input type="email" name="member1_mailid" required>
+
+                <label for="member1_phoneno">Member 1 Phone Number:</label>
+                <input type="tel" name="member1_phoneno" required>
+            </div>
+
+            <!-- Member 2 Details -->
+            <div class="form-section">
+                <h3>Member 2 Details</h3>
+                <label for="member2_name">Member 2 Name:</label>
+                <input type="text" name="member2_name">
+
+                <label for="member2_department">Member 2 Department:</label>
+                <input type="text" name="member2_department">
+
+                <label for="member2_registerno">Member 2 Registration Number:</label>
+                <input type="text" name="member2_registerno">
+
+                <label for="member2_mailid">Member 2 Email ID:</label>
+                <input type="email" name="member2_mailid">
+
+                <label for="member2_phoneno">Member 2 Phone Number:</label>
+                <input type="tel" name="member2_phoneno">
+            </div>
+
+            <!-- Member 3 Details -->
+            <div class="form-section">
+                <h3>Member 3 Details</h3>
+                <label for="member3_name">Member 3 Name:</label>
+                <input type="text" name="member3_name">
+
+                <label for="member3_department">Member 3 Department:</label>
+                <input type="text" name="member3_department">
+
+                <label for="member3_registerno">Member 3 Registration Number:</label>
+                <input type="text" name="member3_registerno">
+
+                <label for="member3_mailid">Member 3 Email ID:</label>
+                <input type="email" name="member3_mailid">
+
+                <label for="member3_phoneno">Member 3 Phone Number:</label>
+                <input type="tel" name="member3_phoneno">
+            </div>
+
+            <!-- Mentor Details -->
+            <div class="form-section">
+                <h3>Mentor Details</h3>
+                <label for="mentor_name">Mentor Name:</label>
+                <input type="text" name="mentor_name">
+            </div>
+
+            <!-- Submit button -->
+            <button type="submit">Register Team</button>
+        </form>
+    </div>
+</body>
+</html>
