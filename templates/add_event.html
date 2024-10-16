@@ -3,27 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <title>Add Event</title>
 </head>
 <body>
-    <h2>Add New Event</h2>
-    <form action="/add-event" method="POST" enctype="multipart/form-data">
-        <label for="event_name">Event Name:</label>
-        <input type="text" name="event_name" id="event_name" required><br><br>
+    <div class="container mt-5">
+        <h2 class="text-center">Add New Event</h2>
+        <form action="/add-event" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="event_name">Event Name:</label>
+                <input type="text" class="form-control" name="event_name" id="event_name" required>
+            </div>
 
-        <label for="event_description">Event Description:</label>
-        <textarea name="event_description" id="event_description" required></textarea><br><br>
+            <div class="form-group">
+                <label for="event_description">Event Description:</label>
+                <textarea class="form-control" name="event_description" id="event_description" rows="4" required></textarea>
+            </div>
 
-        <label for="event_registration_link">Registration Link:</label>
-        <input type="url" name="event_registration_link" id="event_registration_link" required><br><br>
+            <div class="form-group">
+                <label for="event_registration_link">Registration Link:</label>
+                <input type="url" class="form-control" name="event_registration_link" id="event_registration_link" required>
+            </div>
 
-        <label for="event_deadline">Event Deadline:</label>
-        <input type="date" name="event_deadline" id="event_deadline" required><br><br>
+            <div class="form-group">
+                <label for="event_deadline">Event Deadline:</label>
+                <input type="date" class="form-control" name="event_deadline" id="event_deadline" required>
+            </div>
 
-        <label for="event_poster">Event Poster (Image):</label>
-        <input type="file" name="event_poster" id="event_poster" accept="image/*" required><br><br>
+            <div class="form-group">
+                <label for="event_poster">Event Poster (Image):</label>
+                <input type="file" class="form-control-file" name="event_poster" id="event_poster" accept="image/*" required>
+            </div>
 
-        <button type="submit">Submit Event</button>
-    </form>
+            <button type="submit" class="btn btn-primary btn-block">Submit Event</button>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
