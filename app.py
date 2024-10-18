@@ -162,7 +162,45 @@ def register_team():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+# Route to display registered teams
+@app.route('/teams/<event_name>')
+def display_teams(event_name):
+    try:
+        # Fetch all teams registered under the given event
+        teams_ref = db.collection(event_name)
+        teams = [doc.to_dict() for doc in teams_ref.stream()]
 
+        # Pass the teams and event_name to the HTML template
+        return render_template('display_teams.html', teams=teams, event_name=event_name)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# Route to handle approve/reject actions
+@app.route('/teams/<event_name>/<team_name>/update_status', methods=['POST'])
+def update_status(event_name, team_name):
+    try:
+        action = request.form.get('action')  # "approve" or "reject"
+
+        # Update the team's status in Firestore
+        status = 'Approved' if action == 'approve' else 'Rejected'
+        db.collection(event_name).document(team_name).update({'status': status})
+
+        return redirect(url_for('display_teams', event_name=event_name))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Route to view details of a team
+@app.route('/teams/<event_name>/<team_name>')
+def view_team_details(event_name, team_name):
+    try:
+        # Fetch the team details from Firestore
+        team_ref = db.collection(event_name).document(team_name)
+        team = team_ref.get().to_dict()
+
+        return render_template('team_details.html', team=team, event_name=event_name)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
