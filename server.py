@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import uuid, json
+import random, string
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -22,11 +23,11 @@ def events():
         # Adding a event
         form_data = request.form
         form_dict = form_data.to_dict()
-
         event_name = request.form.get('event_name')
+        event_id = event_name[:3] + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
         event_poster = request.files.get('event_poster')
-        print((form_dict))
-        # a = int(input())
+        print(form_dict)
+              
         # Check if an event poster is uploaded as a file
         if event_poster:
             # Generate a unique file name for the poster
@@ -36,12 +37,19 @@ def events():
             blob.make_public()
             event_poster_url = blob.public_url
             form_dict.update({ 'event_poster_url': event_poster_url})
-        db.collection('events').document(event_name).set(form_dict)
+        form_dict.update({"event_id": event_id})
+        db.collection('events').document(event_id).set(form_dict)
         return jsonify({'success': True, 'message': 'Event added successfully!'}), 201
         
 
     elif request.method == "GET":
         # Retrieve all events
+        all_events_ref = db.collection('events')
+        all_events = [doc.to_dict() for doc in all_events_ref.stream()]
+        
+        # Return the list of events as a JSON response
+        return jsonify({'events': all_events}), 200
+
         pass
 
 
@@ -63,13 +71,22 @@ def events():
             form_json_edit.update({ 'event_poster_url': event_poster_url_edit})
         
         db.collection('events').document(event_id).set(form_json_edit)
-                  
-        pass
+        return jsonify({'success': True, 'message': 'Event updated successfully!'}), 201
 
 
     elif request.method == "DELETE":
         # Removing an event
         # event_id read from request
+        event_id = request.form.get('event_id')
+        event_ref = db.collection('events').document(event_id)
+        if event_ref.get().exists:
+            # Delete the document
+            event_ref.delete()
+            return jsonify({"message": "Event deleted successfully"}), 200
+        else:
+            return jsonify({"error": "Event not found"}), 404
+
+
         pass
 
 
