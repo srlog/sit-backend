@@ -46,7 +46,7 @@ def events():
 
     elif request.method == "GET":
         # Retrieve all events
-        all_events_ref = db.collection('events').order_by('created_at', direction='ASCENDING')
+        all_events_ref = db.collection('events').order_by('created_at', direction=firestore.Query.ASCENDING)
         all_events = [doc.to_dict() for doc in all_events_ref.stream()]
         
         # Return the list of events as a JSON response
