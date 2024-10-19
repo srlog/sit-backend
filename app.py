@@ -206,8 +206,6 @@ def update_status(event_name, team_name):
 # Route to view details of a team
 @app.route('/teams/<event_name>/<team_name>')
 def view_team_details(event_name, team_name):
-
-    ,
     try:
         # Fetch the team details from Firestore
         team_ref = db.collection(event_name).document(team_name)
