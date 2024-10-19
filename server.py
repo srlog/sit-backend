@@ -22,11 +22,11 @@ def events():
         # Adding a event
         form_data = request.form
         form_dict = form_data.to_dict()
-        form_json = json.dumps(form_dict)
 
         event_name = request.form.get('event_name')
-        event_poster = request.files['event_poster']
-
+        event_poster = request.files.get('event_poster')
+        print((form_dict))
+        # a = int(input())
         # Check if an event poster is uploaded as a file
         if event_poster:
             # Generate a unique file name for the poster
@@ -35,12 +35,9 @@ def events():
             blob.upload_from_file(event_poster, content_type=event_poster.content_type)
             blob.make_public()
             event_poster_url = blob.public_url
-            form_json.update({ 'event_poster_url': event_poster_url})
-            db.collection('events').document(event_name).set(form_json)
-            
-
-        else:
-            return jsonify({'error': 'Event poster is missing'}), 400
+            form_dict.update({ 'event_poster_url': event_poster_url})
+        db.collection('events').document(event_name).set(form_dict)
+        return jsonify({'success': True, 'message': 'Event added successfully!'}), 201
         
 
     elif request.method == "GET":
@@ -51,22 +48,21 @@ def events():
     elif request.method == "PUT" :
         # updating the event
         form_data_edit = request.form
-        form_dict_edit = form_data_edit.to_dict()
-        form_json_edit = json.dumps(form_dict_edit)
-
+        form_json_edit = form_data_edit.to_dict()
         event_id = request.form.get("event_id")
-        event_poster_edit = request.files['event_poster']
+        event_poster_edit = request.files.get("event_poster")
 
         # Check if an event poster is uploaded as a file
-        if event_poster:
+        if event_poster_edit:
             # Generate a unique file name for the poster
             poster_filename_edit = f"{uuid.uuid4()}_{event_poster_edit.filename}"
             blob_edit = bucket.blob(poster_filename_edit)
             blob_edit.upload_from_file(event_poster_edit, content_type=event_poster_edit.content_type)
             blob_edit.make_public()
             event_poster_url_edit = blob_edit.public_url
-            form_json.update({ 'event_poster_url': event_poster_url_edit})
-            db.collection('events').document(event_id).set(form_json_edit)
+            form_json_edit.update({ 'event_poster_url': event_poster_url_edit})
+        
+        db.collection('events').document(event_id).set(form_json_edit)
                   
         pass
 
