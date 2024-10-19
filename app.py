@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify, render_template, redirect
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import uuid
-import os
+import os,json
+import requests
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -28,37 +29,43 @@ def register_event():
 @app.route('/add-event', methods=['POST'])
 def add_event():
     try:
-        # Collect form data and files
+
+        
+        form_data = request.form
+        form_dict = form_data.to_dict()
+        form_json = json.dumps(form_dict)
+        # return form_json
+
+        # # Collect form data and files
         event_name = request.form.get('event_name')
-        event_description = request.form.get('event_description')
-        event_registration_link = request.form.get('event_registration_link')
-        event_deadline = request.form.get('event_deadline')
+        # event_description = request.form.get('event_description')
+        # event_registration_link = request.form.get('event_registration_link')
+        # event_deadline = request.form.get('event_deadline')
         event_poster = request.files['event_poster']
 
         # Check if an event poster is uploaded as a file
         if event_poster:
             # Generate a unique file name for the poster
             poster_filename = f"{uuid.uuid4()}_{event_poster.filename}"
-
-            # Upload the poster to Firebase Storage
             blob = bucket.blob(poster_filename)
             blob.upload_from_file(event_poster, content_type=event_poster.content_type)
-
-            # Get the publicly accessible URL for the uploaded poster
             blob.make_public()
             event_poster_url = blob.public_url
+            form_json.update({ 'event_poster_url': event_poster_url})
+
         else:
             return jsonify({'error': 'Event poster is missing'}), 400
-
-        # Store event details in Firestore
-        event_data = {
-            'event_name': event_name,
-            'event_description': event_description,
-            'event_poster_url': event_poster_url,
-            'event_registration_link': event_registration_link,
-            'event_deadline': event_deadline
-        }
-        db.collection('events').document(event_name).set(event_data)
+        
+        
+        # # Store event details in Firestore
+        # event_data = {
+        #     'event_name': event_name,
+        #     'event_description': event_description,
+        #     'event_poster_url': event_poster_url,
+        #     'event_registration_link': event_registration_link,
+        #     'event_deadline': event_deadline
+        # }
+        db.collection('events').document(event_name).set(form_json)
 
         return jsonify({'success': True, 'message': 'Event added successfully!'}), 201
 
@@ -69,6 +76,7 @@ def add_event():
 @app.route('/register_event', methods=['POST'])
 def register_team():
     try:
+        print(request.form)
         # Collect form data and files
         event_name = request.form.get('event_name')  # hidden input
         team_name = request.form.get('team_name')
@@ -162,13 +170,18 @@ def register_team():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+
+
 # Route to display registered teams
 @app.route('/teams/<event_name>')
 def display_teams(event_name):
     try:
         # Fetch all teams registered under the given event
-        teams_ref = db.collection(event_name)
-        teams = [doc.to_dict() for doc in teams_ref.stream()]
+        response = requests.post(f'http://localhost:5001/api-teams/{event_name}')
+        teams = response.json()
+        # teams_ref = db.collection(event_name)
+        # teams = [doc.to_dict() for doc in teams_ref.stream()]
 
         # Pass the teams and event_name to the HTML template
         return render_template('display_teams.html', teams=teams, event_name=event_name)
@@ -177,7 +190,7 @@ def display_teams(event_name):
 
 
 # Route to handle approve/reject actions
-@app.route('/teams/<event_name>/<team_name>/update_status', methods=['POST'])
+@app.route('/teams/<event_name>/<team_name>/update_status', methods=['POST','GET'])
 def update_status(event_name, team_name):
     try:
         action = request.form.get('action')  # "approve" or "reject"
@@ -193,6 +206,8 @@ def update_status(event_name, team_name):
 # Route to view details of a team
 @app.route('/teams/<event_name>/<team_name>')
 def view_team_details(event_name, team_name):
+
+    ,
     try:
         # Fetch the team details from Firestore
         team_ref = db.collection(event_name).document(team_name)
@@ -203,4 +218,4 @@ def view_team_details(event_name, team_name):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
