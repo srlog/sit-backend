@@ -98,7 +98,7 @@ def teams(event_id):
         # Return the list of events as a JSON response
         return jsonify({'teams': all_teams}), 200
 
-    if request.method == "POST":
+    elif request.method == "POST":
         event_data = request.form
         event_dict = event_data.to_dict()
         team_name = request.form.get('team_name')
@@ -114,7 +114,7 @@ def teams(event_id):
             blob.make_public()
             ppt_url = blob.public_url
             event_dict.update({ 'event_poster_url': ppt_url})
-        event_dict.update({"event_id": event_id})
+        event_dict.update({"team_id": team_id})
         db.collection(event_id).document(team_id).set(event_dict)
         return jsonify({'success': True, 'message': 'Team added successfully!'}), 201
 
@@ -155,7 +155,6 @@ def ind_team(event_id, team_id):
         status = request.form.get('status')
         feedback = request.form.get('feedback')
         geotag = request.files.get('geotag')
-              
         
         # Check if an event geotag is uploaded as a file
         if geotag:
@@ -170,6 +169,40 @@ def ind_team(event_id, team_id):
         team_dict.update({"status": status, 'feedback':feedback})
         db.collection(event_id).document(team_id).set(team_dict)
         return jsonify({'success': True, 'message': 'Team added successfully!'}), 200
+
+@app.route('/api/custom_events', methods = ["POST","GET","PUT",'DELETE'])
+def custom_events():
+    if request.method == "POST":
+        # Adding a event
+        form_data1 = request.form
+        form_dict1 = form_data1.to_dict()
+        event_name1 = request.form.get('event_name')
+        event_id1 = event_name1[:3] + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        event_poster1 = request.files.get('event_poster')
+        print(form_dict1)
+            
+        # Check if an event poster is uploaded as a file
+        if event_poster1:
+            # Generate a unique file name for the poster
+            poster_filename1 = f"{uuid.uuid4()}_{event_poster1.filename}"
+            blob1 = bucket.blob(poster_filename1)
+            blob1.upload_from_file(event_poster1, content_type=event_poster1.content_type)
+            blob1.make_public()
+            event_poster_url1 = blob1.public_url
+            form_dict1.update({ 'event_poster_url': event_poster_url1})
+        form_dict1.update({"event_id": event_id1})
+        db.collection('custom_events').document(event_id1).set(form_dict1)
+        return jsonify({'success': True, 'message': 'Custom Event added successfully!'}), 201
+        
+
+    elif request.method == "GET":
+        # Retrieve all events
+        all_custom_events_ref = db.collection('custom_events')
+        all_custom_events = [doc.to_dict() for doc in all_custom_events_ref.stream()]
+        
+        # Return the list of events as a JSON response
+        return jsonify({'events': all_custom_events}), 200
+
 
 
 if __name__ == '__main__':
