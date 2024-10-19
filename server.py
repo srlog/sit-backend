@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
-import uuid
+import uuid, json
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -9,7 +9,7 @@ app = Flask(__name__)
 # Initialize Firebase Admin SDK
 cred = credentials.Certificate("firebasesdk.json")  # Replace with your Firebase admin SDK JSON file path
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'msec-test-62a61.appspot.com'  # Replace with your storage bucket name
+    'storageBucket': 'http://testing-sit-ed0c2.appspot.com'  # Replace with your storage bucket name
 })
 
 db = firestore.client()
@@ -20,8 +20,67 @@ bucket = storage.bucket()
 def events():
     if request.method == "POST":
         # Adding a event
+        form_data = request.form
+        form_dict = form_data.to_dict()
+        form_json = json.dumps(form_dict)
+
+        event_name = request.form.get('event_name')
+        event_poster = request.files['event_poster']
+
+        # Check if an event poster is uploaded as a file
+        if event_poster:
+            # Generate a unique file name for the poster
+            poster_filename = f"{uuid.uuid4()}_{event_poster.filename}"
+            blob = bucket.blob(poster_filename)
+            blob.upload_from_file(event_poster, content_type=event_poster.content_type)
+            blob.make_public()
+            event_poster_url = blob.public_url
+            form_json.update({ 'event_poster_url': event_poster_url})
+            db.collection('events').document(event_name).set(form_json)
+            
+
+        else:
+            return jsonify({'error': 'Event poster is missing'}), 400
+        
+
+    elif request.method == "GET":
+        # Retrieve all events
+        pass
+
+
+    elif request.method == "PUT" :
+        # updating the event
+        form_data_edit = request.form
+        form_dict_edit = form_data_edit.to_dict()
+        form_json_edit = json.dumps(form_dict_edit)
+
+        event_id = request.form.get("event_id")
+        event_poster_edit = request.files['event_poster']
+
+        # Check if an event poster is uploaded as a file
+        if event_poster:
+            # Generate a unique file name for the poster
+            poster_filename_edit = f"{uuid.uuid4()}_{event_poster_edit.filename}"
+            blob_edit = bucket.blob(poster_filename_edit)
+            blob_edit.upload_from_file(event_poster_edit, content_type=event_poster_edit.content_type)
+            blob_edit.make_public()
+            event_poster_url_edit = blob_edit.public_url
+            form_json.update({ 'event_poster_url': event_poster_url_edit})
+            db.collection('events').document(event_id).set(form_json_edit)
+                  
+        pass
+
+
+    elif request.method == "DELETE":
+        # Removing an event
+        # event_id read from request
+        pass
+
 
     
+
+
+
 
 
 
