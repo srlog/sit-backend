@@ -1,0 +1,195 @@
+openapi: 3.0.0
+info:
+  title: Event Management API
+  description: API for managing events and teams, including creating, updating, and deleting events and teams.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5001
+    description: Local server
+
+paths:
+  /:
+    get:
+      summary: Hello Barath
+      description: A simple endpoint that returns a greeting message.
+      responses:
+        '200':
+          description: Greeting message
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/events:
+    post:
+      summary: Add a new event
+      description: Creates a new event with a poster.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                event_name:
+                  type: string
+                event_description:
+                  type: string
+                event_registration_link:
+                  type: string
+                event_deadline:
+                  type: string
+                event_poster:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Event added successfully
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+    get:
+      summary: Retrieve all events
+      description: Returns a list of all events.
+      responses:
+        '200':
+          description: A list of events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        event_id:
+                          type: string
+                        event_name:
+                          type: string
+                        event_description:
+                          type: string
+                        event_poster_url:
+                          type: string
+                        event_registration_link:
+                          type: string
+                        event_deadline:
+                          type: string
+        '500':
+          description: Internal server error
+
+    put:
+      summary: Update an existing event
+      description: Updates an existing event.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                event_id:
+                  type: string
+                event_name:
+                  type: string
+                event_description:
+                  type: string
+                event_registration_link:
+                  type: string
+                event_deadline:
+                  type: string
+                event_poster:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Event updated successfully
+        '404':
+          description: Event not found
+        '500':
+          description: Internal server error
+
+    delete:
+      summary: Delete an event
+      description: Removes an event based on the provided event ID.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                event_id:
+                  type: string
+      responses:
+        '200':
+          description: Event deleted successfully
+        '404':
+          description: Event not found
+
+  /api/teams/{event_id}:
+    get:
+      summary: Retrieve all teams for an event
+      description: Returns a list of teams registered under a specific event.
+      parameters:
+        - in: path
+          name: event_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of teams
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teams:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        team_id:
+                          type: string
+                        team_name:
+                          type: string
+                        event_id:
+                          type: string
+        '404':
+          description: No teams found for the event
+        '500':
+          description: Internal server error
+
+    post:
+      summary: Add a new team to an event
+      description: Creates a new team under a specified event.
+      parameters:
+        - in: path
+          name: event_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                team_name:
+                  type: string
+                ppt:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Team added successfully
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
