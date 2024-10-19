@@ -3,7 +3,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import uuid, json
 import random, string
-
+from datetime import datetime as date_time
 # Initialize Flask app
 app = Flask(__name__)
 
@@ -39,14 +39,14 @@ def events():
             blob.make_public()
             event_poster_url = blob.public_url
             form_dict.update({ 'event_poster_url': event_poster_url})
-        form_dict.update({"event_id": event_id})
+        form_dict.update({"event_id": event_id, 'created_at': date_time.now()})
         db.collection('events').document(event_id).set(form_dict)
         return jsonify({'success': True, 'message': 'Event added successfully!'}), 201
         
 
     elif request.method == "GET":
         # Retrieve all events
-        all_events_ref = db.collection('events')
+        all_events_ref = db.collection('events').order_by('created_at', direction='ASCENDING')
         all_events = [doc.to_dict() for doc in all_events_ref.stream()]
         
         # Return the list of events as a JSON response
