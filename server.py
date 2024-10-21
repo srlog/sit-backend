@@ -14,23 +14,44 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Tabl
 app = Flask(__name__)
 CORS(app)
 # Initialize Firebase Admin SDK
-cred = credentials.Certificate("firebasesdk.json")  # Replace with your Firebase admin SDK JSON file path
+"""To download this ..  1. go to "Project Settings"  2. click "Service Accounts" tab  3. click "Generate new private key"""
+cred = credentials.Certificate("firebasesdk.json")  
+
+# Uploading files to storagebucket
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'http://testing-sit-ed0c2.appspot.com'  # Replace with your storage bucket name
 })
 
-db = firestore.client()
-bucket = storage.bucket()
 
+db = firestore.client() # Database
+bucket = storage.bucket() # For storing files
 
+""" API endpoint for events
+--> POST: Register a new event
+--> GET: Retrieves all events
+--> PUT: Updates an existing event
+--> DELETE: Deletes an event
+"""
 @app.route('/api/events', methods = ["POST","GET","PUT",'DELETE'])
 def events():
     if request.method == "POST":
-        # Adding a event
         form_data = request.form
         form_dict = form_data.to_dict()
         event_name = request.form.get('event_name')
-        event_id = event_name[:3] + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        # Generating a random event_Id with first 3 characters of event_name to debug
+        if len(event_name) > 2:
+            prefix = event_name[:3]
+        else: 
+            prefix = event_name
+
+        for i in range(5):
+            event_id = prefix + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            existing_event = db.collection('events').document(event_id).get()
+            # If the event_id does not exist, break the loop and use it
+            if not existing_event.exists:
+                break
+            if i==4:
+                return jsonify({'success': False, 'message': 'Unable to generate a unique event ID after several attempts'}), 500
         event_poster = request.files.get('event_poster')
 
         if event_poster:
@@ -72,7 +93,7 @@ def events():
             event_poster_url_edit = blob_edit.public_url
             form_json_edit.update({ 'event_poster_url': event_poster_url_edit})
         
-        db.collection('events').document(event_id).set(form_json_edit)
+        db.collection('events').document(event_id).update(form_json_edit)
         return jsonify({'success': True, 'message': 'Event updated successfully!'}), 201
 
 
@@ -110,17 +131,29 @@ def teams(event_id):
             
             event_dict.update({each: False})
         team_name = request.form.get('team_name')
-        team_id = team_name[:3] + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        if len(team_name) > 2:
+            prefix = team_name[:3]
+        else: 
+            prefix = team_name
+        for i in range(5):
+            team_id = prefix + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            existing_team = db.collection(event_id).document(team_id).get()
+            # If the event_id does not exist, break the loop and use it
+            if not existing_team.exists:
+                break
+            if i==4:
+                return jsonify({'success': False, 'message': 'Unable to generate a unique team ID after several attempts'}), 500
+         
         ppt = request.files.get('ppt')
               
         # Check if an event poster is uploaded as a file    
         if ppt:
             # Generate a unique file name for the poster
             ppt_filename = f"{uuid.uuid4()}_{ppt.filename}"
-            blob = bucket.blob(ppt_filename)
-            blob.upload_from_file(ppt, content_type=ppt.content_type)
-            blob.make_public()
-            ppt_url = blob.public_url
+            blob_team = bucket.blob(ppt_filename)
+            blob_team.upload_from_file(ppt, content_type=ppt.content_type)
+            blob_team.make_public()
+            ppt_url = blob_team.public_url
             event_dict.update({ 'event_poster_url': ppt_url})
         event_dict.update({"team_id": team_id})
         db.collection(event_id).document(team_id).set(event_dict)
@@ -162,11 +195,11 @@ def ind_team(event_id, team_id):
         team_dict = team_data.to_dict()
 
         status = request.form.get('status')
-        all_status_hod = [key for key, value in team_dict.items() ( (if 'status' in key) and (if value))]
+        all_status_hod = [key for key, value in team_dict.items() if 'status' in key and value]
         for each_status in all_status_hod:
             status_cur = team_dict.get(each_status)
             if status_cur:
-                team_dict.update(each_status: status_cur)
+                team_dict.update({each_status: status_cur})
 
         feedback = request.form.get('feedback')
         geotag = request.files.get('geotag')
