@@ -4,9 +4,10 @@ from firebase_admin import credentials, firestore, storage
 import uuid, json
 import random, string
 from datetime import datetime as date_time
+from flask_cors import CORS
 # Initialize Flask app
 app = Flask(__name__)
-
+CORS(app)
 # Initialize Firebase Admin SDK
 cred = credentials.Certificate("firebasesdk.json")  # Replace with your Firebase admin SDK JSON file path
 firebase_admin.initialize_app(cred, {
@@ -105,7 +106,7 @@ def teams(event_id):
         team_id = team_name[:3] + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
         ppt = request.files.get('ppt')
               
-        # Check if an event poster is uploaded as a file
+        # Check if an event poster is uploaded as a file    
         if ppt:
             # Generate a unique file name for the poster
             ppt_filename = f"{uuid.uuid4()}_{ppt.filename}"
@@ -137,6 +138,7 @@ def individual_event(event_id):
 @app.route("/api/event/<event_id>/<team_id>", methods=['GET','PUT'])
 def ind_team(event_id, team_id):
 
+
     if request.method == "GET":
     
         ind_team_ref = db.collection(event_id).document(team_id)
@@ -153,10 +155,16 @@ def ind_team(event_id, team_id):
         team_dict = team_data.to_dict()
 
         status = request.form.get('status')
+        status_hod = request.form.get('status_hod')
+        status_principal = request.form.get('status_principal')
+        if status_hod:
+            team_dict.update({'status_hod':status_hod})
+        if status_principal: 
+            team_dict.update({'status_principal':status_principal})
+
         feedback = request.form.get('feedback')
         geotag = request.files.get('geotag')
-        
-        # Check if an event geotag is uploaded as a file
+
         if geotag:
             # Generate a unique file name for the geotag
             geotag_filename = f"{uuid.uuid4()}_{geotag.filename}"
@@ -166,9 +174,10 @@ def ind_team(event_id, team_id):
             geotag_url = blob_geotag.public_url
             team_dict.update({ 'geotag_url': geotag_url})
 
-        team_dict.update({"status": status, 'feedback':feedback})
+        team_dict.update({ "status": status, 'feedback':feedback})
+
         db.collection(event_id).document(team_id).set(team_dict)
-        return jsonify({'success': True, 'message': 'Team added successfully!'}), 200
+        return jsonify({'success': True, 'message': 'Team updated successfully!'}), 200
 
 @app.route('/api/custom_events', methods = ["POST","GET","PUT",'DELETE'])
 def custom_events():
@@ -202,6 +211,30 @@ def custom_events():
         
         # Return the list of events as a JSON response
         return jsonify({'events': all_custom_events}), 200
+
+@app.route("/api/od/<event_id>/<team_id>", methods=['GET', 'PUT'])
+def get_od(event_id, team_id):
+    if request.method == "GET":
+        # Reference to the specific team document in the event collection
+        ind_team_ref = db.collection(event_id).document(team_id)
+        ind_team = ind_team_ref.get()
+
+        # Check if the document exists
+        if ind_team.exists:
+            # Convert the document to a dictionary
+            team_data = ind_team.to_dict()
+
+            # Filter and print all fields that contain 'department' in their keys
+            department_fields = {key: value for key, value in team_data.items() if 'department' in key.lower()}
+            year_fields = {key: value for key, value in team_data.items() if (('1st' in key.lower()) or ('I' in key.lower()))}
+            department_fields.update(year_fields)
+            # Print the fields with 'department' in their keys
+            print("Department-related fields and values:", department_fields)
+            
+            return department_fields  # Return the filtered data as a response
+        else:
+            return {"error": "Team not found"}, 404
+
 
 
 
