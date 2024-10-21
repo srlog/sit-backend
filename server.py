@@ -1,10 +1,15 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import uuid, json
 import random, string
 from datetime import datetime as date_time
 from flask_cors import CORS
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
@@ -16,10 +21,6 @@ firebase_admin.initialize_app(cred, {
 
 db = firestore.client()
 bucket = storage.bucket()
-
-@app.route('/')
-def hello():
-    return "HELLO BARATH"
 
 
 @app.route('/api/events', methods = ["POST","GET","PUT",'DELETE'])
@@ -102,6 +103,12 @@ def teams(event_id):
     elif request.method == "POST":
         event_data = request.form
         event_dict = event_data.to_dict()
+        departments_status = ["status "+value+" HOD" for key, value in event_dict.items() if 'department' in key.lower()]
+        firstyear = ["status "+value+" HOD" for key, value in event_dict.items() if '1st year' in value.lower()]
+        departments_status.append(firstyear[0])
+        for each in departments_status:
+            
+            event_dict.update({each: False})
         team_name = request.form.get('team_name')
         team_id = team_name[:3] + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
         ppt = request.files.get('ppt')
@@ -155,12 +162,11 @@ def ind_team(event_id, team_id):
         team_dict = team_data.to_dict()
 
         status = request.form.get('status')
-        status_hod = request.form.get('status_hod')
-        status_principal = request.form.get('status_principal')
-        if status_hod:
-            team_dict.update({'status_hod':status_hod})
-        if status_principal: 
-            team_dict.update({'status_principal':status_principal})
+        all_status_hod = [key for key, value in team_dict.items() ( (if 'status' in key) and (if value))]
+        for each_status in all_status_hod:
+            status_cur = team_dict.get(each_status)
+            if status_cur:
+                team_dict.update(each_status: status_cur)
 
         feedback = request.form.get('feedback')
         geotag = request.files.get('geotag')
@@ -212,26 +218,132 @@ def custom_events():
         # Return the list of events as a JSON response
         return jsonify({'events': all_custom_events}), 200
 
-@app.route("/api/od/<event_id>/<team_id>", methods=['GET', 'PUT'])
+
+def generate_od(team_data):
+    # team_data is the document retrieved from the firestore
+
+    # Checking for any of the 7 departments or 1st year students are there..
+    department_fields = [value for key, value in team_data.items() if 'department' in key.lower()]
+    year_fields = [value for key, value in team_data.items() if '1st year' in value.lower()]
+    department_fields.extend(year_fields)
+
+    # extracting the members
+    members = [value for key, value in team_data.items() if 'name' in key.lower() and 'member' in key.lower()]
+
+    # Initialising the frequently used keys
+    lead_name = team_data.get("lead_name")
+    team_name = team_data.get("team_name")
+    event_name = team_data.get("event_name")
+    event_date = team_data.get("event_date")
+
+    # The final output is getting generated with this name
+    output_filename = f"{event_name} {team_name} {lead_name}.pdf"
+    
+    # For selecting the corresponding name and image of the sign
+    hashmap_hod = {
+        "IT": "IT HOD",
+        "CSE": "CSE HOD",
+        "ECE": "ECE HOD",
+        "EEE": "EEE HOD",
+        "AI&DS": "AI&DS HOD",
+        "MECH": "MECH HOD",
+        "CIVIL": "CIVIL HOD",
+        "1st year": "1st year HOD"
+    }
+    hashmap_hod_sign = {
+        "IT": "sample.jpg",
+        "CSE": "sample.jpg",
+        "ECE": "sample.jpg",
+        "EEE": "sample.jpg",
+        "AI&DS": "sample.jpg",
+        "MECH": "sample.jpg",
+        "CIVIL": "sample.jpg",
+        "1st year": "sample.jpg"
+    }
+
+    doc = SimpleDocTemplate(output_filename, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+    normal_style = styles["Normal"]
+    heading_style = styles["Heading1"]
+
+    #Header image
+    header_image_path = "headermsec.jpg"
+    try:
+        img = Image(header_image_path, 7 * inch, 1.3 * inch)
+        elements.append(img)
+    except:
+        elements.append(Paragraph("Meenakshi Sundararajan Engineering College", heading_style))
+
+    # Adding event details dynamically
+    elements.append(Spacer(1, 12))
+    event_details = f"<b>Event Details:</b><br/>{event_name}<br/>{event_date}<br/>"
+    elements.append(Paragraph(event_details, normal_style))
+    elements.append(Spacer(1, 12))
+    
+    time_of_duty = f"<b>Time of OD:</b><br/>Start Time: {event_date} 9:00AM<br/>End Time: {event_date} 4:00PM"
+    elements.append(Paragraph(time_of_duty, normal_style))
+    elements.append(Spacer(1, 12))
+
+    participation_details = f"<b>Team Lead</b><br/>{lead_name} {team_data.get("lead_department")} <br/><b>Team members</b><br/>"
+    # Iterating through each team member and displaying it 
+    for i in range(1, len(members) + 1):
+        member_key = f"member{i}"
+        participation_details += f"{team_data.get(member_key+'_name')} {team_data.get(member_key+'_department')} {team_data.get(member_key+'_year')}<br/>"
+    elements.append(Paragraph(participation_details, normal_style))
+    elements.append(Spacer(1, 12))
+
+    mentor_details = f"<b>Mentor name: {team_data.get('mentor_name')}</b><br/><br/><br/>"
+    elements.append(Paragraph(mentor_details, normal_style))
+
+    elements.append(Paragraph("<b>HODs:</b>", normal_style))
+    elements.append(Spacer(1, 12))
+
+    # Dynamically adding the HODs sign , if any of their student is on the team
+    for dept in department_fields:
+        hod_name = hashmap_hod.get(dept, "N/A")
+        hod_image_path = hashmap_hod_sign.get(dept, 'default.jpg')
+        try:
+            img = Image(hod_image_path, 1 * inch, 0.5 * inch)
+            hod_table = Table([[Paragraph(hod_name, normal_style), img]], colWidths=[1 * inch, 5 * inch])
+            hod_table.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP')]))
+            elements.append(hod_table)
+        except:
+            elements.append(Paragraph("APPROVED", normal_style))
+            elements.append(Paragraph(hod_name, normal_style))
+
+        elements.append(Spacer(1, 10))
+
+    elements.append(Spacer(1, 15))
+
+    signatures_data = [['PRINCIPAL']]
+    table = Table(signatures_data, colWidths=[2 * inch, 4 * inch, 2 * inch])
+    table.setStyle(TableStyle([('LINEABOVE', (0,0), (1, 1), 1, colors.black), ('ALIGN', (0, 0), (-1, -1), 'CENTER')]))
+    elements.append(table)
+
+    doc.build(elements)
+    return output_filename
+
+
+# Admin has a generate OD button on the progress page, when clicked the OD is returned as a file 
+# The frontend should write code to save it locally and make it downloadable for the user
+@app.route("/api/od/<event_id>/<team_id>", methods=['GET', 'POST'])
 def get_od(event_id, team_id):
     if request.method == "GET":
         # Reference to the specific team document in the event collection
         ind_team_ref = db.collection(event_id).document(team_id)
         ind_team = ind_team_ref.get()
-
+        team_data = ind_team.to_dict()
+        print(team_data)
+        status = [value for key,value in team_data.items() if ('status') in key]
         # Check if the document exists
-        if ind_team.exists:
+        if ind_team.exists and all(status):
             # Convert the document to a dictionary
-            team_data = ind_team.to_dict()
+            od_pdf = generate_od(team_data)
+            return send_file(od_pdf,as_attachment=True)
+        elif ind_team.exists : 
+            return {"error": "OD not approved by all HODS"}, 404
 
-            # Filter and print all fields that contain 'department' in their keys
-            department_fields = {key: value for key, value in team_data.items() if 'department' in key.lower()}
-            year_fields = {key: value for key, value in team_data.items() if (('1st' in key.lower()) or ('I' in key.lower()))}
-            department_fields.update(year_fields)
-            # Print the fields with 'department' in their keys
-            print("Department-related fields and values:", department_fields)
-            
-            return department_fields  # Return the filtered data as a response
         else:
             return {"error": "Team not found"}, 404
 
@@ -239,4 +351,4 @@ def get_od(event_id, team_id):
 
 
 if __name__ == '__main__':
-    app.run(port=5001, debug=True)
+    app.run(port=5001)
