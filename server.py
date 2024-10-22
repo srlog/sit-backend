@@ -239,4 +239,4 @@ def get_od(event_id, team_id):
 
 
 if __name__ == '__main__':
-    app.run(port=5001, debug=True)
+    app.run(port=5001, debug=True, host="0.0.0.0")
