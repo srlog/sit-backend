@@ -376,7 +376,7 @@ def generate_od(team_data):
     elements.append(Paragraph(time_of_duty, normal_style))
     elements.append(Spacer(1, 12))
 
-    participation_details = f"<b>Team Lead</b><br/>{lead_name} {team_data.get("lead_department")} <br/><b>Team members</b><br/>"
+    participation_details = f"<b>Team Lead</b><br/>{lead_name} {team_data.get('lead_department')} <br/><b>Team members</b><br/>"
     # Iterating through each team member and displaying it 
     for i in range(1, len(members) + 1):
         member_key = f"member{i}"
