@@ -10,6 +10,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
@@ -314,7 +315,7 @@ def generate_od(team_data):
     # team_data is the document retrieved from the firestore
     # Checking for any of the 7 departments or 1st year students are there..
     department_fields = [value for key, value in team_data.items() if 'department' in key.lower()]
-    year_fields = [value for key, value in team_data.items() if '1st year' in value.lower()]
+    year_fields = [value for key, value in team_data.items() if '1st year' in value]
     department_fields.extend(year_fields)
 
     # extracting the members
@@ -439,8 +440,54 @@ def get_od(event_id, team_id):
 
         else:
             return {"error": "Team not found"}, 404
+        
+        
+""" API endpoint for custom_events
+--> POST: Create a new user
+--> GET: Get password for the username from firestore
+--> PUT: Update the password
+--> DELETE: Deletes a user
+"""
+@app.route("/api/admin/users", methods=["POST","GET","PUT","DELETE"])
+def admin_users():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
 
+        db.collection("users").document(username).set({
+            "username": username,
+            "password": password
+        })
+        return jsonify({"message": "New User added successfully"}), 200
+    
+    elif request.method == "GET":
+        username = request.form.get("username")
+        ref_user = db.collection('users').document(username)
+        user_data = ref_user.get()
+        return jsonify({"data":{"username": username, "password" : user_data.get('password')}})
+    
+    elif request.method == "PUT":
+        username = request.form.get("username")
+        password = request.form.get("password")
 
+        db.collection("users").document(username).update({
+            "username": username,
+            "password": password
+        })
+        return jsonify({"message": "User updated successfully"}), 200
+    elif request.method == "DELETE":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        ref_user = db.collection('users').document(username)
+        data_user = ref_user.get()
+        if password == data_user.get("password"):
+            if ref_user.get().exists:
+                ref_user.delete()
+                return jsonify({'message':"User deleted successfully"})
+            else: 
+                return jsonify({"error": "User not found"}), 404
+        else:
+            return jsonify({"error": "Enter correct password to delete it"})
 
 
 if __name__ == '__main__':
