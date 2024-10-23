@@ -20,7 +20,7 @@ cred = credentials.Certificate("firebasesdk.json")
 
 # Uploading files to storagebucket
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'http://testing-sit-ed0c2.appspot.com'  # Replace with your storage bucket name
+    'storageBucket': 'testing-sit-ed0c2.appspot.com'  # Replace with your storage bucket name
 })
 
 
@@ -72,7 +72,7 @@ def events():
 
     elif request.method == "GET":
         # to retrieve all events
-        all_events_ref = db.collection('events').order_by('created_at', direction=firestore.Query.ASCENDING)
+        all_events_ref = db.collection('events').order_by('created_at', direction=firestore.Query.DESCENDING)
         all_events = [doc.to_dict() for doc in all_events_ref.stream()]
         
         # Return the list of events as a JSON response
