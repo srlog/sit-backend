@@ -39,7 +39,9 @@ def events():
         #to create a new event
         form_data = request.form
         form_dict = form_data.to_dict()
-        event_name = request.form.get('event_name')
+        event_name = request.form.get('event_name') 
+        print(request.form)
+        
         # Generating a random event_Id with first 3 characters of event_name to debug
         if len(event_name) > 2:
             prefix = event_name[:3]
@@ -124,23 +126,29 @@ def teams(event_id):
         all_teams_ref = db.collection(event_id)
         all_teams = [teams.to_dict() for teams in all_teams_ref.stream()]
         return jsonify({'teams': all_teams}), 200
+    
+    
 
     elif request.method == "POST":
         # Registering a team fo the event specified with the event_id
         event_data = request.form
+        print(event_data)
+        breakpoint()
         event_dict = event_data.to_dict()
         # Extracts Departments and adding individual status fields for each HOD
-        departments_status = ["status_"+value+"_HOD" for key, value in event_dict.items() if 'department' in key.lower()]
-        departments_status.append(firstyear[0])
+        departments_status =list ( dict(["status_"+value+"_HOD" for key, value in event_dict.items() if ('department' in key.lower() or ('I' in key.lower()))]))
         for each in departments_status:
             event_dict.update({each: False})
         event_dict.update({"status_admin" : False})
         # same as the event_id
-        team_name = request.form.get('team_name')
-        if len(team_name) > 2:
-            prefix = team_name[:3]
-        else: 
-            prefix = team_name
+        team_name = request.form.get('team_teamName')
+        if team_name:
+            if len(team_name) > 2:
+                prefix = team_name[:3]
+            else: 
+                prefix = team_name
+        else:
+            prefix = ''
         for i in range(5):
             team_id = prefix + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
             existing_team = db.collection(event_id).document(team_id).get()
@@ -322,7 +330,7 @@ def generate_od(team_data):
     members = [value for key, value in team_data.items() if 'name' in key.lower() and 'member' in key.lower()]
 
     # Initialising the frequently used keys
-    lead_name = team_data.get("lead_name")
+    lead_name = team_data.get("team_leadName")
     team_name = team_data.get("team_name")
     event_name = team_data.get("event_name")
     event_date = team_data.get("event_date")
