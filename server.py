@@ -135,7 +135,7 @@ def teams(event_id):
         print(event_data)
         event_dict = event_data.to_dict()
         # Extracts Departments and adding individual status fields for each HOD
-        departments_status =list ( dict(["status_"+value+"_HOD" for key, value in event_dict.items() if ('department' in key.lower() or ('I' in key.lower()))]))
+        departments_status = list(set(["status_"+value.strip()+"_HOD" for key, value in event_dict.items() if (('department' in key) or ('1st year' in value))]))
         for each in departments_status:
             event_dict.update({each: False})
         event_dict.update({"status_admin" : False})
