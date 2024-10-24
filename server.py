@@ -67,7 +67,7 @@ def events():
             blob.make_public()
             event_poster_url = blob.public_url
             form_dict.update({ 'event_poster_url': event_poster_url})
-        form_dict.update({"event_id": event_id, 'created_at': date_time.now()})
+        form_dict.update({"event_id": event_id, 'created_at': str(date_time.now().date())})
         db.collection('events').document(event_id).set(form_dict)
         return jsonify({'success': True, 'message': 'Event added successfully!'}), 201
         
