@@ -133,7 +133,6 @@ def teams(event_id):
         # Registering a team fo the event specified with the event_id
         event_data = request.form
         print(event_data)
-        breakpoint()
         event_dict = event_data.to_dict()
         # Extracts Departments and adding individual status fields for each HOD
         departments_status =list ( dict(["status_"+value+"_HOD" for key, value in event_dict.items() if ('department' in key.lower() or ('I' in key.lower()))]))
