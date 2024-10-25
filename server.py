@@ -241,9 +241,9 @@ def ind_team(event_id, team_id):
             geotag_url = blob_geotag.public_url
             team_dict.update({ 'geotag_url': geotag_url})
         if feedback:
-            history_id = event_id + "_" + team_id
+            history_id = team_id + "_" + event_id
             this = db.collection(event_id).document(team_id).get().to_dict()
-            this.update({'geotag_url': geotag_url, 'feedback': feedback})
+            this.update({'geotag_url': geotag_url, 'feedback': feedback, 'ended_at': date_time.now()})
             db.collection("History").document(history_id).set(this)
         db.collection(event_id).document(team_id).update(team_dict)
         return jsonify({'success': True, 'message': 'Team updated successfully!'}), 200
@@ -496,12 +496,31 @@ def admin_users():
         if password == data_user.get("password"):
             if ref_user.get().exists:
                 ref_user.delete()
-                return jsonify({'message':"User deleted successfully"})
+                return jsonify({'message':"User deleted successfully"}), 201
             else: 
                 return jsonify({"error": "User not found"}), 404
         else:
             return jsonify({"error": "Enter correct password to delete it"})
 
+@app.route('/api/admin/photos')
+def get_carousel():
+
+    if request.method == "GET":
+        all_events_ref = db.collection('events').order_by('created_at', direction=firestore.Query.DESCENDING)
+        top_poster = [doc.to_dict().get('event_poster_url') for doc in all_events_ref.stream()]
+
+        history = db.collection('History').order_by('ended_at' , direction=firestore.Query.DESCENDING )
+        top_geotags = [doc.to_dict().get('geotag_url') for doc in history.stream()]
+
+        if len(top_geotags > 5):
+            top_geotags = top_geotags[:5]
+        if len(top_poster > 5):
+            top_poster = top_poster[:5]
+        
+        return jsonify({"data":{
+            "geotags" : top_geotags,
+            "posters" : top_poster
+        }}), 201
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True, host="0.0.0.0")
