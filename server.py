@@ -134,8 +134,9 @@ def teams(event_id):
         event_data = request.form
         print(event_data)
         event_dict = event_data.to_dict()
+        event_dict = {key.replace('[', '').replace(']', ''): value for key, value in event_dict.items()}
         # Extracts Departments and adding individual status fields for each HOD
-        departments_status = list(set(["status_"+value.strip()+"_HOD" for key, value in event_dict.items() if (('department' in key) or ('1st year' in value))]))
+        departments_status = list(set(["status_"+value.strip()+"_HOD" for key, value in event_dict.items() if (('department' in key) or ('1styear' in value))]))
         for each in departments_status:
             event_dict.update({each: False})
         event_dict.update({"status_admin" : False})
@@ -224,11 +225,10 @@ def ind_team(event_id, team_id):
             status_cur = team_dict.get(each_status)
             # If the field present in the request, updates on the firestore
             if status_cur:
-                team_dict.update({each_status: status_cur})
+                team_dict.update({each_status: True})
         # Check whether the requesst contains feedback or not
         feedback = request.form.get('feedback')
-        if feedback:
-            team_dict.update({'feedback':feedback})
+
 
         geotag = request.files.get('geotag')
         if geotag:
@@ -239,7 +239,12 @@ def ind_team(event_id, team_id):
             blob_geotag.make_public()
             geotag_url = blob_geotag.public_url
             team_dict.update({ 'geotag_url': geotag_url})
-        db.collection(event_id).document(team_id).set(team_dict)
+        if feedback:
+            history_id = event_id + "_" + team_id
+            this = db.collection(event_id).document(team_id).get().to_dict()
+            this.update({'geotag_url': geotag_url, 'feedback': feedback})
+            db.collection("History").document(history_id).set(this)
+        db.collection(event_id).document(team_id).update(team_dict)
         return jsonify({'success': True, 'message': 'Team updated successfully!'}), 200
 
 """ API endpoint for custom_events
