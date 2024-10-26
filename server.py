@@ -165,7 +165,7 @@ def teams(event_id):
             blob_team.make_public()
             ppt_url = blob_team.public_url
             event_dict.update({ 'event_poster_url': ppt_url})
-        event_dict.update({"team_id": team_id})
+        event_dict.update({"team_id": team_id, "messages" : '''{"messages":[{"text":"Ask something!","sent":true,"timestamp":"10:30 AM"}]}'''})
         db.collection(event_id).document(team_id).set(event_dict)
         return jsonify({'success': True, 'message': 'Team added successfully!'}), 201
 
