@@ -13,7 +13,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Tabl
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}}, methods=["GET", "POST", "PUT","DELETE", "OPTIONS"])
 # Initialize Firebase Admin SDK
 """To download this ..  1. go to "Project Settings"  2. click "Service Accounts" tab  3. click "Generate new private key"""
 cred = credentials.Certificate("firebasesdk.json")  
@@ -67,7 +67,7 @@ def events():
             blob.make_public()
             event_poster_url = blob.public_url
             form_dict.update({ 'event_poster_url': event_poster_url})
-        form_dict.update({"event_id": event_id, 'created_at': date_time.now()})
+        form_dict.update({"event_id": event_id, 'created_at': str(date_time.now().date())})
         db.collection('events').document(event_id).set(form_dict)
         return jsonify({'success': True, 'message': 'Event added successfully!'}), 201
         
@@ -99,6 +99,7 @@ def events():
             form_json_edit.update({ 'event_poster_url': event_poster_url_edit})
         
         # Using update instead of set to only add new fields and update the specified one
+        print(form_json_edit)
         db.collection('events').document(event_id).update(form_json_edit)
         return jsonify({'success': True, 'message': 'Event updated successfully!'}), 201
 
