@@ -324,11 +324,11 @@ def custom_events():
 
 
 # FUnction to generate OD for a registered team
-def generate_od(team_data):
+def generate_od(team_data, event_id, team_id):
     # team_data is the document retrieved from the firestore
     # Checking for any of the 7 departments or 1st year students are there..
     department_fields = [value for key, value in team_data.items() if 'department' in key.lower()]
-    year_fields = [value for key, value in team_data.items() if '1st year' in value]
+    year_fields = [value for key, value in team_data.items()  if '1st year' in str(value)]
     department_fields.extend(year_fields)
 
     # extracting the members
@@ -336,10 +336,13 @@ def generate_od(team_data):
 
     # Initialising the frequently used keys
     lead_name = team_data.get("team_leadName")
-    team_name = team_data.get("team_name")
-    event_name = team_data.get("event_name")
-    event_date = team_data.get("event_date")
+    team_name = team_data.get("team_teamName")
 
+    event_data_ref = db.collection('events').document(event_id)
+    event_data_here = event_data_ref.get().to_dict()
+
+    event_name = event_data_here.get("event_name")
+    event_date = event_data_here.get("event_date")
     # The final output is getting generated with this name
     output_filename = f"{event_name} {team_name} {lead_name}.pdf"
     
@@ -392,12 +395,12 @@ def generate_od(team_data):
     participation_details = f"<b>Team Lead</b><br/>{lead_name} {team_data.get('lead_department')} <br/><b>Team members</b><br/>"
     # Iterating through each team member and displaying it 
     for i in range(1, len(members) + 1):
-        member_key = f"member{i}"
+        member_key = f"member_{i}"
         participation_details += f"{team_data.get(member_key+'_name')} {team_data.get(member_key+'_department')} {team_data.get(member_key+'_year')}<br/>"
     elements.append(Paragraph(participation_details, normal_style))
     elements.append(Spacer(1, 12))
 
-    mentor_details = f"<b>Mentor name: {team_data.get('mentor_name')}</b><br/><br/><br/>"
+    mentor_details = f"<b>Mentor name: {team_data.get('Allotted_mentor')}</b><br/><br/><br/>"
     elements.append(Paragraph(mentor_details, normal_style))
 
     elements.append(Paragraph("<b>HODs:</b>", normal_style))
@@ -446,7 +449,7 @@ def get_od(event_id, team_id):
         # Check if the document exists and all function will make sure all Approval is obtained
         if ind_team.exists and all(status):
             # Convert the document to a dictionary
-            od_pdf = generate_od(team_data)
+            od_pdf = generate_od(team_data,event_id, team_id)
             return send_file(od_pdf,as_attachment=True)
         elif ind_team.exists : 
             return {"error": "OD not approved by all HODS"}, 404
