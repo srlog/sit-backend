@@ -11,6 +11,13 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 
+from twilio.rest import Client
+
+account_sid = 'ACd27a2a567406267f5c78c97f10ed2f39'
+auth_token = '9abf8fd51a576ae0d4e95437d3d54436'
+client = Client(account_sid, auth_token)
+
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, methods=["GET", "POST", "PUT","DELETE", "OPTIONS"])
