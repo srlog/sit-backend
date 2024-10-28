@@ -335,7 +335,7 @@ def generate_od(team_data, event_id, team_id):
     # team_data is the document retrieved from the firestore
     # Checking for any of the 7 departments or 1st year students are there..
     department_fields = [value for key, value in team_data.items() if 'department' in key.lower()]
-    year_fields = [value for key, value in team_data.items()  if '1st year' in str(value)]
+    year_fields = [value for key, value in team_data.items()  if '1styear' in str(value)]
     department_fields.extend(year_fields)
 
     # extracting the members
@@ -372,7 +372,7 @@ def generate_od(team_data, event_id, team_id):
         "AI&DS": "sample.jpg",
         "MECH": "sample.jpg",
         "CIVIL": "sample.jpg",
-        "1st year": "sample.jpg"
+        "1styear": "sample.jpg"
     }
 
     doc = SimpleDocTemplate(output_filename, pagesize=A4)
