@@ -4,6 +4,7 @@ from firebase_admin import credentials, firestore, storage
 import uuid, json
 import random, string
 from datetime import datetime as date_time
+from datetime import date
 from flask_cors import CORS
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -20,10 +21,10 @@ client = Client(account_sid, auth_token)
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, methods=["GET", "POST", "PUT","DELETE", "OPTIONS"])
+CORS(app, resources=r'/api/*', origins=["https://clubhub-sit.web.app", "http://localhost:5173"], methods=["GET", "POST", "PUT","DELETE", "OPTIONS"]) #Barath i disable this so that i can debug
 # Initialize Firebase Admin SDK
 """To download this ..  1. go to "Project Settings"  2. click "Service Accounts" tab  3. click "Generate new private key"""
-cred = credentials.Certificate("firebasesdk.json")  
+cred = credentials.Certificate("/home/msecc/mysite/firebasesdk.json")
 
 # Uploading files to storagebucket
 firebase_admin.initialize_app(cred, {
@@ -46,16 +47,16 @@ def events():
         #to create a new event
         form_data = request.form
         form_dict = form_data.to_dict()
-        event_name = request.form.get('event_name') 
+        event_name = request.form.get('event_name')
         print(request.form)
-        
+
         # Generating a random event_Id with first 3 characters of event_name to debug
         if len(event_name) > 2:
             prefix = event_name[:3]
         else: # if the event)name is less then length 3
             prefix = event_name
 
-        # Generating unique event_id 
+        # Generating unique event_id
         for i in range(5):
             event_id = prefix + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
             existing_event = db.collection('events').document(event_id).get()
@@ -63,7 +64,7 @@ def events():
                 break
             if i==4:
                 return jsonify({'success': False, 'message': 'Unable to generate a unique event ID after several attempts'}), 500
-            
+
         event_poster = request.files.get('event_poster')
 
         if event_poster:
@@ -77,13 +78,13 @@ def events():
         form_dict.update({"event_id": event_id, 'created_at': str(date_time.now().date())})
         db.collection('events').document(event_id).set(form_dict)
         return jsonify({'success': True, 'message': 'Event added successfully!'}), 201
-        
+
 
     elif request.method == "GET":
         # to retrieve all events
         all_events_ref = db.collection('events').order_by('created_at', direction=firestore.Query.DESCENDING)
         all_events = [doc.to_dict() for doc in all_events_ref.stream()]
-        
+
         # Return the list of events as a JSON response
         return jsonify({'events': all_events}), 200
 
@@ -104,7 +105,7 @@ def events():
             blob_edit.make_public()
             event_poster_url_edit = blob_edit.public_url
             form_json_edit.update({ 'event_poster_url': event_poster_url_edit})
-        
+
         # Using update instead of set to only add new fields and update the specified one
         print(form_json_edit)
         db.collection('events').document(event_id).update(form_json_edit)
@@ -134,8 +135,8 @@ def teams(event_id):
         all_teams_ref = db.collection(event_id)
         all_teams = [teams.to_dict() for teams in all_teams_ref.stream()]
         return jsonify({'teams': all_teams}), 200
-    
-    
+
+
 
     elif request.method == "POST":
         # Registering a team fo the event specified with the event_id
@@ -153,7 +154,7 @@ def teams(event_id):
         if team_name:
             if len(team_name) > 2:
                 prefix = team_name[:3]
-            else: 
+            else:
                 prefix = team_name
         else:
             prefix = ''
@@ -164,8 +165,8 @@ def teams(event_id):
                 break
             if i==4:
                 return jsonify({'success': False, 'message': 'Unable to generate a unique team ID after several attempts'}), 500
-        
-        ppt = request.files.get('ppt')  
+
+        ppt = request.files.get('ppt')
         if ppt:
             ppt_filename = f"{uuid.uuid4()}_{ppt.filename}"
             blob_team = bucket.blob(ppt_filename)
@@ -211,7 +212,7 @@ def ind_team(event_id, team_id):
             return jsonify({team_id: team_data}), 200
         else:
             return jsonify({"error": "Team not found"}), 404
-        
+
     elif request.method == "DELETE":
         team_ref = db.collection(event_id).document(team_id)
         if team_ref.get().exists:
@@ -219,7 +220,7 @@ def ind_team(event_id, team_id):
             return jsonify({"message": "Team deleted successfully"}), 200
         else:
             return jsonify({"error": "Team not found"}), 404
-        
+
     elif request.method == "PUT":
         team_data = request.form
         team_dict = team_data.to_dict()
@@ -274,16 +275,16 @@ def custom_events():
         else: # if the event)name is less then length 3
             prefix = event_name1
 
-        # Generating unique event_id 
+        # Generating unique event_id
         for i in range(5):
             event_id1 = prefix + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
             existing_event1 = db.collection('custom_events').document(event_id1).get()
             if not existing_event1.exists:
                 break
             if i==4:
-                return jsonify({'success': False, 'message': 'Unable to generate a unique event ID after several attempts'}), 500  
+                return jsonify({'success': False, 'message': 'Unable to generate a unique event ID after several attempts'}), 500
         event_poster1 = request.files.get('event_poster')
-    
+
         # Check if an event poster is uploaded as a file
         if event_poster1:
             # Generate a unique file name for the poster
@@ -296,19 +297,19 @@ def custom_events():
         form_dict1.update({"event_id": event_id1})
         db.collection('custom_events').document(event_id1).set(form_dict1)
         return jsonify({'success': True, 'message': 'Custom Event added successfully!'}), 201
-        
+
 
     elif request.method == "GET":
         # Retrieve all custom events
         all_custom_events_ref = db.collection('custom_events')
         all_custom_events = [doc.to_dict() for doc in all_custom_events_ref.stream()]
         return jsonify({'events': all_custom_events}), 200
-    
+
     elif request.method == "PUT":
         # Approving a event and adding it to the events collection
         event_id_approve = request.form.get('event_id')
         event_ref_approve = db.collection('custom_events').document(event_id_approve)
-        
+
         if event_ref_approve.get().exists:
             this_data = event_ref_approve.get()
             db.collection('events').document(event_id_approve).set(this_data)
@@ -316,7 +317,7 @@ def custom_events():
             return jsonify({"message": "Event deleted successfully"}), 200
         else:
             return jsonify({"error": "Event not found"}), 404
-    
+
 
     elif request.method == "DELETE":
         # Removing an event
@@ -335,7 +336,7 @@ def generate_od(team_data, event_id, team_id):
     # team_data is the document retrieved from the firestore
     # Checking for any of the 7 departments or 1st year students are there..
     department_fields = [value for key, value in team_data.items() if 'department' in key.lower()]
-    year_fields = [value for key, value in team_data.items()  if '1styear' in str(value)]
+    year_fields = [value for key, value in team_data.items()  if '1st year' in str(value)]
     department_fields.extend(year_fields)
 
     # extracting the members
@@ -352,7 +353,7 @@ def generate_od(team_data, event_id, team_id):
     event_date = event_data_here.get("event_date")
     # The final output is getting generated with this name
     output_filename = f"{event_name} {team_name} {lead_name}.pdf"
-    
+
     # For selecting the corresponding name and image of the sign
     hashmap_hod = {
         "IT": "IT HOD",
@@ -372,7 +373,7 @@ def generate_od(team_data, event_id, team_id):
         "AI&DS": "sample.jpg",
         "MECH": "sample.jpg",
         "CIVIL": "sample.jpg",
-        "1styear": "sample.jpg"
+        "1st year": "sample.jpg"
     }
 
     doc = SimpleDocTemplate(output_filename, pagesize=A4)
@@ -394,13 +395,13 @@ def generate_od(team_data, event_id, team_id):
     event_details = f"<b>Event Details:</b><br/>{event_name}<br/>{event_date}<br/>"
     elements.append(Paragraph(event_details, normal_style))
     elements.append(Spacer(1, 12))
-    
+
     time_of_duty = f"<b>Time of OD:</b><br/>Start Time: {event_date} 9:00AM<br/>End Time: {event_date} 4:00PM"
     elements.append(Paragraph(time_of_duty, normal_style))
     elements.append(Spacer(1, 12))
 
     participation_details = f"<b>Team Lead</b><br/>{lead_name} {team_data.get('lead_department')} <br/><b>Team members</b><br/>"
-    # Iterating through each team member and displaying it 
+    # Iterating through each team member and displaying it
     for i in range(1, len(members) + 1):
         member_key = f"member_{i}"
         participation_details += f"{team_data.get(member_key+'_name')} {team_data.get(member_key+'_department')} {team_data.get(member_key+'_year')}<br/>"
@@ -442,7 +443,7 @@ def generate_od(team_data, event_id, team_id):
 """ API endpoint for generating OD
 --> GET: Generates OD letter for the registered team, if they got aproved from all HODs and principal
 """
-# Admin has a generate OD button on the progress page, when clicked the OD is returned as a file 
+# Admin has a generate OD button on the progress page, when clicked the OD is returned as a file
 # The frontend should write code to save it locally and make it downloadable for the user
 @app.route("/api/od/<event_id>/<team_id>", methods=['GET'])
 def get_od(event_id, team_id):
@@ -458,13 +459,13 @@ def get_od(event_id, team_id):
             # Convert the document to a dictionary
             od_pdf = generate_od(team_data,event_id, team_id)
             return send_file(od_pdf,as_attachment=True)
-        elif ind_team.exists : 
+        elif ind_team.exists :
             return {"error": "OD not approved by all HODS"}, 404
 
         else:
             return {"error": "Team not found"}, 404
-        
-        
+
+
 """ API endpoint for custom_events
 --> POST: Create a new user
 --> GET: Get password for the username from firestore
@@ -482,13 +483,13 @@ def admin_users():
             "password": password
         })
         return jsonify({"message": "New User added successfully"}), 200
-    
+
     elif request.method == "GET":
         username = request.form.get("username")
         ref_user = db.collection('users').document(username)
         user_data = ref_user.get()
         return jsonify({"data":{"username": username, "password" : user_data.get('password')}})
-    
+
     elif request.method == "PUT":
         username = request.form.get("username")
         password = request.form.get("password")
@@ -507,10 +508,71 @@ def admin_users():
             if ref_user.get().exists:
                 ref_user.delete()
                 return jsonify({'message':"User deleted successfully"}), 201
-            else: 
+            else:
                 return jsonify({"error": "User not found"}), 404
         else:
             return jsonify({"error": "Enter correct password to delete it"})
+
+@app.route('/api/gettodayod',methods = ["GET"])
+def gettodayod():
+
+    all_events_ref = db.collection('events').order_by('created_at', direction=firestore.Query.DESCENDING)
+    all_events = [doc.to_dict() for doc in all_events_ref.stream()]
+    today = date.today().isoformat()
+    list_events = []
+    today_events = []
+    naming_it = {}
+    for each_event in all_events:
+        if each_event.get("event_date") == today :
+            today_events.append(each_event.get('event_id'))
+        list_events.append(each_event.get('event_id'))
+        naming_it[each_event.get('event_id')] = each_event.get('event_name')
+
+    all_teams = []
+    for this_event in today_events:
+            this_events_ref = db.collection(this_event)
+            this_events =  [{**ddo.to_dict(), 'event_id': this_event, 'event_name': naming_it[this_event]} for ddo in this_events_ref.stream()]
+            all_teams.extend(this_events)
+
+    all_data_teams = []
+
+    for i in all_teams:
+        status = [value for key, value in i.items() if 'status' in key]
+        cur_data = [{}]  # Initialize with a dictionary for team lead data
+
+        # Only proceed if all status values are True
+        if all(status):
+            # Add team lead data
+            cur_data[0]['name'] = i.get('team_leadName')
+            cur_data[0]['department'] = i.get("lead_department")
+            cur_data[0]['year'] = i.get("lead_year")
+
+            # Add member data based on keys with "member" and relevant fields
+            for key, value in i.items():
+                this = key.split('_')
+                if 'member' in this and len(this) == 3:
+                    member_index = int(this[1])  # Convert to an integer for index access
+
+                    # Ensure the `cur_data` list is large enough to accommodate this index
+                    while len(cur_data) <= member_index:
+                        cur_data.append({})  # Add an empty dictionary for each member
+
+                    # Populate member details
+                    if 'name' in this:
+                        cur_data[member_index]['name'] = value
+                    if 'department' in this:
+                        cur_data[member_index]['department'] = value
+                    if 'year' in this:
+                        cur_data[member_index]['year'] = value
+
+            # Add event details to each entry in `cur_data`
+            for j in range(len(cur_data)):
+                cur_data[j]['event'] = i.get("event_name")
+                cur_data[j]['event_id'] = i.get("event_id")
+                cur_data[j]['team_id'] = i.get("team_id")
+
+            all_data_teams.extend(cur_data)
+    return jsonify({"today": all_data_teams}), 201
 
 @app.route('/api/admin/photos')
 def get_carousel():
@@ -522,11 +584,11 @@ def get_carousel():
         history = db.collection('History').order_by('ended_at' , direction=firestore.Query.DESCENDING )
         top_geotags = [doc.to_dict().get('geotag_url') for doc in history.stream()]
 
-        if len(top_geotags > 5):
+        if len(top_geotags) > 5:
             top_geotags = top_geotags[:5]
-        if len(top_poster > 5):
+        if len(top_poster) > 5:
             top_poster = top_poster[:5]
-        
+
         return jsonify({"data":{
             "geotags" : top_geotags,
             "posters" : top_poster
